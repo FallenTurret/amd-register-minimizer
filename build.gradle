@@ -1,0 +1,24 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 12
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'io.github.tudo-aqua:z3-turnkey:4.8.10'
+}
+
+application {
+    mainClassName = 'ru.itmo.Main'
+}
+
+run {
+    enableAssertions = true
+}
