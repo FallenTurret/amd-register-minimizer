@@ -74,11 +74,9 @@ public class Kernel {
                 j++;
             }
             var instruction = getInstruction(i);
-            if (!instruction.getInstruction().contains("nop")) {
-                curBlock.add(i);
-                instruction.setBlock(blocks.size());
-            }
-            if (instruction.getInstruction().contains("branch")) {
+            curBlock.add(i);
+            instruction.setBlock(blocks.size());
+            if (instruction.getInstruction().contains("branch") || instruction.getInstruction().startsWith("s_endpgm")) {
                 blocks.add(curBlock);
                 curBlock = new ArrayList<>();
             }

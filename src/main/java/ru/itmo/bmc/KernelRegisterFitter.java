@@ -93,18 +93,27 @@ public class KernelRegisterFitter {
     private List<Integer> findBreakingPath(int length) {
         try (Context ctx = new Context()) {
             var path = getPathVars(ctx, length);
-            var isPath = getPathConstraints(ctx, path);
-            var isCorrect = getCorrectnessCheck(ctx, path);
+            var breakingPaths = IntStream.range(1, length + 1)
+                    .mapToObj(
+                            i -> ctx.mkAnd(
+                                    getPathConstraints(ctx, path.subList(0, i)),
+                                    ctx.mkNot(getCorrectnessCheck(ctx, path.subList(0, i)))
+                            )
+                    ).toArray(BoolExpr[]::new);
             var solver = ctx.mkSolver();
-            solver.add(ctx.mkAnd(isPath, ctx.mkNot(isCorrect)));
+            solver.add(ctx.mkOr(breakingPaths));
             var status = solver.check();
             if (status.equals(Status.SATISFIABLE)) {
                 var model = solver.getModel();
-                return path.stream()
-                        .map(model::getConstInterp)
-                        .map(Expr::toString)
-                        .map(Integer::parseInt)
-                        .collect(Collectors.toList());
+                for (int i = 0; i < breakingPaths.length; i++) {
+                    if (Boolean.parseBoolean(model.eval(breakingPaths[i], false).toString())) {
+                        return path.subList(0, i + 1).stream()
+                                .map(model::getConstInterp)
+                                .map(Expr::toString)
+                                .map(Integer::parseInt)
+                                .collect(Collectors.toList());
+                    }
+                }
             }
             assert status.equals(Status.UNSATISFIABLE);
             return null;
