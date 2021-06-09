@@ -14,8 +14,13 @@ public class Instruction {
 
     public Instruction(String initialRepresentation) {
         this.initialRepresentation = initialRepresentation;
-        int insBegin = initialRepresentation.indexOf("*/") + 3;
-        int insEnd = insBegin;
+        int insBegin, insEnd;
+        if (initialRepresentation.startsWith("/*")) {
+            insBegin = initialRepresentation.indexOf("*/") + 3;
+        } else {
+            insBegin = 0;
+        }
+        insEnd = insBegin;
         while (insEnd < initialRepresentation.length() && initialRepresentation.charAt(insEnd) != ' ')
             insEnd++;
         instruction = initialRepresentation.substring(insBegin, insEnd);

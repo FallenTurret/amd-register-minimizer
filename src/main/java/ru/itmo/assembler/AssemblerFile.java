@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AssemblerFile {
+    private boolean gallium = false;
     private final List<Kernel> kernels = new ArrayList<>();
     private final List<String> allLines = new ArrayList<>();
     private final List<Integer> scalarCounters = new ArrayList<>();
@@ -25,15 +26,23 @@ public class AssemblerFile {
         for (var line : lines) {
             allLines.add(line);
             var l = line.trim();
-            if (l.startsWith(".kernel ")) {
+            if (l.startsWith(".gallium")) {
+                gallium = true;
+            } else if (l.startsWith(".kernel ")) {
                 curKernel++;
                 kernels.add(new Kernel(l.substring(8)));
                 otherRegisterCounters.add(new ArrayList<>());
-            } else if (l.startsWith(".wavefront_sgpr_count")) {
-                kernels.get(curKernel).setScalarRegisters(Integer.parseInt(l.substring(22)) - 2);
+            } else if (gallium && l.startsWith(".wavefront_sgpr_count")) {
+                kernels.get(curKernel).setScalarRegisters(Integer.parseInt(l.substring(22)));
                 scalarCounters.add(curLine);
-            } else if (l.startsWith(".workitem_vgpr_count")) {
+            } else if (!gallium && l.startsWith(".sgprsnum")) {
+                kernels.get(curKernel).setScalarRegisters(Integer.parseInt(l.substring(10)));
+                scalarCounters.add(curLine);
+            } else if (gallium && l.startsWith(".workitem_vgpr_count")) {
                 kernels.get(curKernel).setVectorRegisters(Integer.parseInt(l.substring(21)));
+                vectorCounters.add(curLine);
+            } else if (!gallium && l.startsWith(".vgprsnum")) {
+                kernels.get(curKernel).setVectorRegisters(Integer.parseInt(l.substring(10)));
                 vectorCounters.add(curLine);
             } else if (l.contains("gprsnum") || l.contains("pgmrsrc1")) {
                 otherRegisterCounters.get(curKernel).add(curLine);
@@ -42,16 +51,23 @@ public class AssemblerFile {
             } else if (l.startsWith("/*") && curLine > 0) {
                 kernels.get(curKernel).addInstruction(line);
                 curInstruction++;
-            } else if (!l.startsWith(".")) {
+            } else if (!l.startsWith(".") && curLine > 0) {
+                boolean isKernel = false;
                 var kernelName = l.substring(0, l.length() - 1);
                 for (int i = 0; i < kernels.size(); i++) {
                     if (kernelName.equals(kernels.get(i).getName())) {
+                        isKernel = true;
                         curKernel = i;
                         kernelsOrder.add(curKernel);
                         break;
                     }
                 }
-                curInstruction = 0;
+                if (isKernel) {
+                    curInstruction = 0;
+                } else {
+                    kernels.get(curKernel).addInstruction(line);
+                    curInstruction++;
+                }
             }
             curLine++;
         }
@@ -59,14 +75,22 @@ public class AssemblerFile {
 
     public void writeToFile(String path) throws IOException {
         for (int i = 0; i < kernels.size(); i++) {
-            var scalar = kernels.get(i).getScalarRegisters() + 2;
+            var scalar = kernels.get(i).getAllScalarRegisters();
             var vector = kernels.get(i).getVectorRegisters();
 
             var scalarLine = allLines.get(scalarCounters.get(i));
-            var newScalarLine = scalarLine.substring(0, scalarLine.indexOf(".wavefront_sgpr_count") + 22) + scalar;
+            String newScalarLine;
+            if (gallium)
+                newScalarLine = scalarLine.substring(0, scalarLine.indexOf(".wavefront_sgpr_count") + 22) + scalar;
+            else
+                newScalarLine = scalarLine.substring(0, scalarLine.indexOf(".sgprsnum") + 10) + scalar;
             allLines.set(scalarCounters.get(i), newScalarLine);
             var vectorLine = allLines.get(vectorCounters.get(i));
-            var newVectorLine = vectorLine.substring(0, vectorLine.indexOf(".workitem_vgpr_count") + 21) + vector;
+            String newVectorLine;
+            if (gallium)
+                newVectorLine = vectorLine.substring(0, vectorLine.indexOf(".workitem_vgpr_count") + 21) + vector;
+            else
+                newVectorLine = vectorLine.substring(0, vectorLine.indexOf(".vgprsnum") + 10) + vector;
             allLines.set(vectorCounters.get(i), newVectorLine);
 
             scalar = (scalar + 7) / 8 * 8;

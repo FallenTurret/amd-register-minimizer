@@ -9,6 +9,7 @@ public class Kernel {
     private final List<Instruction> instructions = new ArrayList<>();
     private final Map<String, Integer> jumps = new HashMap<>();
     private int scalarRegisters;
+    private int extraScalarRegisters = 0;
     private int vectorRegisters;
     private List<List<Integer>> blocks = null;
 
@@ -26,6 +27,10 @@ public class Kernel {
 
     public int getScalarRegisters() {
         return scalarRegisters;
+    }
+
+    public int getAllScalarRegisters() {
+        return scalarRegisters + extraScalarRegisters;
     }
 
     public void setScalarRegisters(int scalarRegisters) {
@@ -108,6 +113,7 @@ public class Kernel {
     }
 
     public void minimizeRegisters() {
+        adjustScalarCounter();
         for (var instruction: instructions) {
             var string = instruction.getInstruction();
             if (
@@ -161,5 +167,18 @@ public class Kernel {
                 }
             }
         }
+    }
+
+    private void adjustScalarCounter() {
+        int maxReg = 0;
+        for (int i = 0; i < getSize(); i++) {
+            for (var arg: getInstruction(i).getArgs()) {
+                if (arg instanceof GPRArgument && ((GPRArgument) arg).isScalar()) {
+                    maxReg = Integer.max(maxReg, ((GPRArgument) arg).getRegister() + ((GPRArgument) arg).getAmount());
+                }
+            }
+        }
+        extraScalarRegisters = scalarRegisters - maxReg;
+        scalarRegisters = maxReg;
     }
 }
