@@ -71,6 +71,11 @@ public class AssemblerFile {
             }
             curLine++;
         }
+        if (kernelsOrder.isEmpty()) {
+            for (int i = 0; i <= curKernel; i++) {
+                kernelsOrder.add(i);
+            }
+        }
     }
 
     public void writeToFile(String path) throws IOException {
@@ -128,11 +133,11 @@ public class AssemblerFile {
         var curInstruction = 0;
         for (var line : allLines) {
             var l = line.trim();
-            if (!l.startsWith(".") && !l.startsWith("/*")) {
+            if ((gallium && !l.startsWith(".") && !l.startsWith("/*")) || (!gallium && l.startsWith(".kernel "))) {
                 curKernel++;
                 curInstruction = 0;
             }
-            if (l.startsWith("/*") && curLine > 0) {
+            if ((l.startsWith("/*") && curLine > 0) || (!gallium && !l.startsWith(".") && !l.startsWith("/*"))) {
                 Files.writeString(file, kernels.get(kernelsOrder.get(curKernel)).getInstruction(curInstruction).toString() + "\n", StandardOpenOption.APPEND);
                 curInstruction++;
             } else {
