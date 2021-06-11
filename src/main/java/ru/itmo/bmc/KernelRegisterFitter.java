@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class KernelRegisterFitter {
+    private static final int THREADS = 2;
     private static final int TIMEOUT_FOR_REGISTER_FINDER = 5000;
     private static final int MAX_REGISTERS_WRITE = 16;
 
@@ -48,6 +49,7 @@ public class KernelRegisterFitter {
         var regSolver = regContext.mkSolver();
         var params = regContext.mkParams();
         params.add("timeout", TIMEOUT_FOR_REGISTER_FINDER);
+        params.add("threads", THREADS);
         regSolver.setParameters(params);
         regSolver.add(getRegisterConstraints(regContext));
         if (impossibleToFindRegisters(regSolver))
@@ -101,6 +103,9 @@ public class KernelRegisterFitter {
                             )
                     ).toArray(BoolExpr[]::new);
             var solver = ctx.mkSolver();
+            var params = ctx.mkParams();
+            params.add("threads", THREADS);
+            solver.setParameters(params);
             solver.add(ctx.mkOr(breakingPaths));
             var status = solver.check();
             if (status.equals(Status.SATISFIABLE)) {
@@ -221,6 +226,9 @@ public class KernelRegisterFitter {
             var loop = ctx.mkOr(difChecks.toArray(new BoolExpr[0]));
 
             var solver = ctx.mkSolver();
+            var params = ctx.mkParams();
+            params.add("threads", THREADS);
+            solver.setParameters(params);
             solver.add(ctx.mkAnd(isPath, ctx.mkNot(loop)));
             var status = solver.check();
             if (status.equals(Status.SATISFIABLE))
