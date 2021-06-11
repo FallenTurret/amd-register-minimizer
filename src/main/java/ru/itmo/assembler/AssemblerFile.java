@@ -1,5 +1,7 @@
 package ru.itmo.assembler;
 
+import me.tongfei.progressbar.ProgressBar;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -149,7 +151,7 @@ public class AssemblerFile {
     }
 
     public void minimizeKernelRegisters() {
-        for (var kernel: kernels) {
+        for (var kernel: ProgressBar.wrap(kernels, "Kernel minimization")) {
             kernel.minimizeRegisters();
         }
     }

@@ -13,6 +13,7 @@ repositories {
 
 dependencies {
     implementation 'io.github.tudo-aqua:z3-turnkey:4.8.10'
+    implementation 'me.tongfei:progressbar:0.9.1'
 }
 
 application {
