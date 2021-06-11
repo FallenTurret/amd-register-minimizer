@@ -30,6 +30,7 @@ public class AssemblerFile {
                 gallium = true;
             } else if (l.startsWith(".kernel ")) {
                 curKernel++;
+                curInstruction = 0;
                 kernels.add(new Kernel(l.substring(8)));
                 otherRegisterCounters.add(new ArrayList<>());
             } else if (gallium && l.startsWith(".wavefront_sgpr_count")) {
